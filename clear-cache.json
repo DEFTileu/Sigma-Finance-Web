@@ -1,0 +1,8 @@
+{
+  "name": "clear-cache",
+  "version": "1.0.0",
+  "scripts": {
+    "clear": "expo start --clear"
+  }
+}
+
