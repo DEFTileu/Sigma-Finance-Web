@@ -1,6 +1,6 @@
 import { handleApiError } from './apiErrorHandler';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://sigma-finance-dumqj.ondigitalocean.app/api';
 const FILE_UPLOAD_URL = 'https://task-flow-spring-boot-a7b12abc3f71.herokuapp.com/api/files/upload-to-project';
 const SECRET_KEY = "95e6a68e941573ef7188f07bb213ee05";
 
