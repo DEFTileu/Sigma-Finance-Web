@@ -50,7 +50,6 @@ function RootLayoutContent() {
         <Stack.Screen name="transfer-phone" />
         <Stack.Screen name="transfer-internal" />
         <Stack.Screen name="statement" />
-        <Stack.Screen name="transaction-details/[id]" />
         <Stack.Screen name="test-auth" />
         <Stack.Screen name="+not-found" />
       </Stack>

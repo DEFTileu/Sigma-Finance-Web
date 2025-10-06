@@ -290,13 +290,14 @@ export default function TransferInternal() {
               id: transactionData.id,
               amount: transactionData.amount,
               currency: transactionData.currency,
-              fromAccountNumber: transactionData.sourceAccountNumber,
-              toAccountNumber: transactionData.destinationAccountNumber,
-              fromAccountType: transactionData.sourceAccountType,
-              toAccountType: transactionData.destinationAccountType,
-              date: transactionData.transactionDate,
+              sourceAccountNumber: transactionData.sourceAccountNumber,
+              targetAccountNumber: transactionData.destinationAccountNumber,
+              counterpartyName: 'Собственный счет',
+              createdAt: transactionData.transactionDate,
               status: transactionData.status,
-              type: transactionData.transactionType,
+              type: 'TRANSFER',
+              direction: 'OUTGOING',
+              description: transactionData.description,
             }}
             onClose={handleCloseReceipt}
             onShare={handleShareReceipt}

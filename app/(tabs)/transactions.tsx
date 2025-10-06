@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Filter, Search, Calendar } from 'lucide-react-native';
 import { apiService } from '@/services/api';
+import TransactionReceipt from '@/components/TransactionReceipt';
 
 interface Transaction {
   id: string;
@@ -29,6 +30,8 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   // Загружаем актуальные данные при каждом возврате на страницу
   useFocusEffect(
@@ -144,6 +147,20 @@ export default function Transactions() {
     }
   };
 
+  const handleTransactionPress = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowReceipt(true);
+  };
+
+  const handleCloseReceipt = () => {
+    setShowReceipt(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleShareReceipt = () => {
+    Alert.alert('Поделиться', 'Функция поделиться чеком');
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -229,7 +246,7 @@ export default function Transactions() {
             <TouchableOpacity
               key={transaction.id}
               style={styles.transactionItem}
-              onPress={() => router.push(`/transaction-details/${transaction.id}`)}
+              onPress={() => handleTransactionPress(transaction)}
             >
               <View style={styles.transactionIcon}>
                 <Text style={styles.transactionIconText}>
@@ -260,6 +277,35 @@ export default function Transactions() {
           ))
         )}
       </ScrollView>
+
+      {/* Модальное окно с чеком транзакции */}
+      <Modal
+        visible={showReceipt}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseReceipt}
+      >
+        {selectedTransaction && (
+          <TransactionReceipt
+            transaction={{
+              id: selectedTransaction.id,
+              amount: selectedTransaction.amount,
+              currency: selectedTransaction.currency,
+              sourceAccountNumber: selectedTransaction.sourceAccountNumber || '',
+              targetAccountNumber: selectedTransaction.targetAccountNumber || '',
+              counterpartyName: selectedTransaction.counterpartyName || '',
+              counterpartyPhone: selectedTransaction.counterpartyPhone,
+              createdAt: selectedTransaction.createdAt,
+              status: selectedTransaction.status,
+              type: selectedTransaction.type,
+              direction: selectedTransaction.direction,
+              description: selectedTransaction.description || undefined,
+            }}
+            onClose={handleCloseReceipt}
+            onShare={handleShareReceipt}
+          />
+        )}
+      </Modal>
     </View>
   );
 }

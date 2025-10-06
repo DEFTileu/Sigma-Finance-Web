@@ -13,9 +13,69 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Функция форматирования телефона в формате +7(XXX) XXX XXXX
+  const formatPhoneNumber = (value: string) => {
+    // Удаляем все, кроме цифр
+    const numbers = value.replace(/\D/g, '');
+
+    // Если начинается с 8, заменяем на 7
+    let cleaned = numbers;
+    if (cleaned.startsWith('8')) {
+      cleaned = '7' + cleaned.slice(1);
+    }
+
+    // Ограничиваем до 11 цифр (7 + 10 цифр)
+    if (cleaned.length > 11) {
+      cleaned = cleaned.slice(0, 11);
+    }
+
+    // Форматируем
+    if (cleaned.length === 0) {
+      return '';
+    }
+
+    let formatted = '+7';
+
+    if (cleaned.length > 1) {
+      formatted += '(' + cleaned.slice(1, 4);
+    }
+
+    if (cleaned.length >= 5) {
+      formatted += ') ' + cleaned.slice(4, 7);
+    }
+
+    if (cleaned.length >= 8) {
+      formatted += ' ' + cleaned.slice(7, 11);
+    }
+
+    return formatted;
+  };
+
+  // Функция для получения чистого номера (только цифры) для отправки на бэкенд
+  const getCleanPhoneNumber = (formatted: string) => {
+    const numbers = formatted.replace(/\D/g, '');
+    if (numbers.startsWith('7')) {
+      return '+' + numbers;
+    }
+    return formatted;
+  };
+
+  // Обработчик изменения номера телефона с форматированием
+  const handlePhoneChange = (raw: string) => {
+    const formatted = formatPhoneNumber(raw);
+    setPhoneNumber(formatted);
+  };
+
   const validateForm = () => {
     if (!name || !surname || !username || !phoneNumber || !password || !confirmPassword) {
       Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
+      return false;
+    }
+
+    // Проверяем, что номер телефона полностью введен (11 цифр)
+    const numbers = phoneNumber.replace(/\D/g, '');
+    if (numbers.length !== 11) {
+      Alert.alert('Ошибка', 'Введите полный номер телефона в формате +7(XXX) XXX XXXX');
       return false;
     }
 
@@ -37,12 +97,13 @@ export default function Register() {
 
     setLoading(true);
     try {
-      console.log('Attempting registration with:', { name, surname, username, phoneNumber });
+      const cleanPhone = getCleanPhoneNumber(phoneNumber);
+      console.log('Attempting registration with:', { name, surname, username, phoneNumber: cleanPhone });
       const response = await apiService.register({
         name,
         surname,
         username,
-        phoneNumber,
+        phoneNumber: cleanPhone,
         password,
       });
       
@@ -135,8 +196,8 @@ export default function Register() {
               <TextInput
                 style={styles.input}
                 value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="+7 (999) 123-45-67"
+                onChangeText={handlePhoneChange}
+                placeholder="+7(999) 123 4567"
                 keyboardType="phone-pad"
               />
             </View>

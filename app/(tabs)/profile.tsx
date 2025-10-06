@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Image, Plat
 import { router, useFocusEffect } from 'expo-router';
 import { apiService } from '@/services/api';
 import { User, LogOut, Edit2, Camera, Save, X } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 interface UserProfile {
   id: string;
@@ -20,6 +22,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Поля для редактирования
   const [editedName, setEditedName] = useState('');
@@ -112,6 +115,8 @@ export default function Profile() {
     }
   };
 
+
+
   const handleLogout = () => {
     Alert.alert(
       'Выход',
@@ -122,12 +127,45 @@ export default function Profile() {
           text: 'Выйти',
           style: 'destructive',
           onPress: async () => {
+            setLoggingOut(true);
             try {
+              // Очищаем токены и данные
               await apiService.logout();
-              router.replace('/login');
+              
+              // Очищаем все локальные данные
+              await AsyncStorage.multiRemove([
+                'jwt_token', 
+                'refresh_token', 
+                'user_id', 
+                'user_data'
+              ]);
+              
+              // Небольшая задержка для корректного обновления состояния
+              setTimeout(() => {
+                setLoggingOut(false);
+                // Перенаправляем на страницу логина
+                router.replace('/login');
+              }, 100);
             } catch (error) {
               console.error('Logout error:', error);
-              router.replace('/login');
+              
+              // В случае ошибки все равно очищаем локальные данные
+              try {
+                await AsyncStorage.multiRemove([
+                  'jwt_token', 
+                  'refresh_token', 
+                  'user_id', 
+                  'user_data'
+                ]);
+              } catch (e) {
+                console.error('Error clearing storage:', e);
+              }
+              
+              // И перенаправляем на логин
+              setTimeout(() => {
+                setLoggingOut(false);
+                router.replace('/login');
+              }, 100);
             }
           },
         },
@@ -135,10 +173,12 @@ export default function Profile() {
     );
   };
 
-  if (loading) {
+  if (loading || loggingOut) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Загрузка профиля...</Text>
+        <Text style={styles.loadingText}>
+          {loggingOut ? 'Выход из системы...' : 'Загрузка профиля...'}
+        </Text>
       </View>
     );
   }
@@ -263,9 +303,15 @@ export default function Profile() {
 
         {/* Кнопка выхода */}
         {!editMode && (
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            disabled={loggingOut}
+          >
             <LogOut size={24} color="#DC2626" />
-            <Text style={styles.logoutButtonText}>Выйти из аккаунта</Text>
+            <Text style={styles.logoutButtonText}>
+              {loggingOut ? 'Выход...' : 'Выйти из аккаунта'}
+            </Text>
           </TouchableOpacity>
         )}
 

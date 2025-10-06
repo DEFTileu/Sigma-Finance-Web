@@ -98,15 +98,57 @@ export default function TransferPhone() {
     }
   };
 
-  // Оставляем только допустимые символы для телефона: ведущий + и цифры
-  const handlePhoneChange = (raw: string) => {
-    let value = raw.replace(/[^+\d]/g, '');
-    // Разрешаем только один ведущий +
-    if (value.includes('+')) {
-      value = value.replace(/\+/g, '');
-      value = '+' + value;
+  // Функция форматирования телефона в формате +7(XXX) XXX XXXX
+  const formatPhoneNumber = (value: string) => {
+    // Удаляем все, кроме цифр
+    const numbers = value.replace(/\D/g, '');
+    
+    // Если начинается с 8, заменяем на 7
+    let cleaned = numbers;
+    if (cleaned.startsWith('8')) {
+      cleaned = '7' + cleaned.slice(1);
     }
-    setPhone(value);
+    
+    // Ограничиваем до 11 цифр (7 + 10 цифр)
+    if (cleaned.length > 11) {
+      cleaned = cleaned.slice(0, 11);
+    }
+    
+    // Форматируем
+    if (cleaned.length === 0) {
+      return '';
+    }
+    
+    let formatted = '+7';
+    
+    if (cleaned.length > 1) {
+      formatted += '(' + cleaned.slice(1, 4);
+    }
+
+    if (cleaned.length >= 5) {
+      formatted += ') ' + cleaned.slice(4, 7);
+    }
+
+    if (cleaned.length >= 8) {
+      formatted += ' ' + cleaned.slice(7, 11);
+    }
+
+    return formatted;
+  };
+
+  // Функция для получения чистого номера (только цифры) для отправки на бэкенд
+  const getCleanPhoneNumber = (formatted: string) => {
+    const numbers = formatted.replace(/\D/g, '');
+    if (numbers.startsWith('7')) {
+      return '+' + numbers;
+    }
+    return formatted;
+  };
+
+  // Обработчик изменения номера телефона с форматированием
+  const handlePhoneChange = (raw: string) => {
+    const formatted = formatPhoneNumber(raw);
+    setPhone(formatted);
   };
 
   // Санитизация суммы: цифры и одна точка, заменяем запятую на точку
@@ -128,9 +170,17 @@ export default function TransferPhone() {
       return;
     }
 
+    // Проверяем, что номер полностью введен (11 цифр)
+    const numbers = phone.replace(/\D/g, '');
+    if (numbers.length !== 11) {
+      Alert.alert('Ошибка', 'Введите полный номер телефона');
+      return;
+    }
+
     setChecking(true);
     try {
-      const recipientData = await apiService.checkPhone({ phone });
+      const cleanPhone = getCleanPhoneNumber(phone);
+      const recipientData = await apiService.checkPhone({ phone: cleanPhone });
       setRecipient(recipientData);
       console.log('Recipient data:', recipientData);
     } catch (error: any) {
@@ -176,6 +226,7 @@ export default function TransferPhone() {
 
     setLoading(true);
     try {
+      const cleanPhone = getCleanPhoneNumber(phone);
       const response = await apiService.transferByPhone({
         sourceAccountId: userId,
         destinationAccountId: recipient.id,
@@ -291,7 +342,7 @@ export default function TransferPhone() {
               style={[styles.input, { flex: 1 }]}
               value={phone}
               onChangeText={handlePhoneChange}
-              placeholder="+7 (999) 123-45-67"
+              placeholder="+7(999) 123 4567"
               keyboardType="phone-pad"
             />
             <TouchableOpacity
@@ -405,13 +456,15 @@ export default function TransferPhone() {
               id: transactionData.id,
               amount: transactionData.amount,
               currency: transactionData.currency,
-              fromAccountNumber: transactionData.sourceAccountNumber,
-              toAccountNumber: `${recipient?.name} ${recipient?.surname}`,
-              fromAccountType: transactionData.sourceAccountType,
-              toAccountType: transactionData.destinationAccountType,
-              date: transactionData.transactionDate,
+              sourceAccountNumber: transactionData.sourceAccountNumber,
+              targetAccountNumber: transactionData.destinationAccountNumber,
+              counterpartyName: `${recipient?.name} ${recipient?.surname}`,
+              counterpartyPhone: phone,
+              createdAt: transactionData.transactionDate,
               status: transactionData.status,
-              type: transactionData.transactionType,
+              type: transactionData.transactionType || 'PHONE_TRANSFER',
+              direction: 'OUTGOING',
+              description: transactionData.description,
             }}
             onClose={handleCloseReceipt}
             onShare={handleShareReceipt}
@@ -518,19 +571,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginTop: 4,
   },
-  currencyDisplay: {
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  currencyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
   switchContainer: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -635,5 +675,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
 });
+

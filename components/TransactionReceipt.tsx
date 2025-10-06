@@ -42,10 +42,7 @@ export default function TransactionReceipt({ transaction, onClose, onShare }: Tr
   };
 
   const getTransactionTitle = () => {
-    if (transaction.type === 'TRANSFER') {
-      if (transaction.counterpartyName === 'Собственный счет') {
-        return 'Перевод между счетами';
-      }
+    if (transaction.type === 'TRANSFER' || transaction.type === 'PHONE_TRANSFER') {
       return transaction.direction === 'OUTGOING' ? 'Перевод отправлен' : 'Перевод получен';
     }
     return 'Операция выполнена';
@@ -104,25 +101,29 @@ export default function TransactionReceipt({ transaction, onClose, onShare }: Tr
             <View style={styles.divider} />
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{transaction.direction === 'OUTGOING' ? 'Со счёта' : 'На счёт'}</Text>
+              <Text style={styles.detailLabel}>Со счёта</Text>
               <Text style={styles.detailValue}>{transaction.sourceAccountNumber}</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{transaction.direction === 'OUTGOING' ? 'На счёт' : 'Со счёта'}</Text>
+              <Text style={styles.detailLabel}>На счёт</Text>
               <Text style={styles.detailValue}>{transaction.targetAccountNumber}</Text>
             </View>
 
-            {transaction.counterpartyName && transaction.counterpartyName !== 'Собственный счет' && (
+            {transaction.counterpartyName && (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Получатель</Text>
+                <Text style={styles.detailLabel}>
+                  {transaction.direction === 'OUTGOING' ? 'Получатель' : 'Отправитель'}
+                </Text>
                 <Text style={styles.detailValue}>{transaction.counterpartyName}</Text>
               </View>
             )}
 
             {transaction.counterpartyPhone && (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Телефон получателя</Text>
+                <Text style={styles.detailLabel}>
+                  {transaction.direction === 'OUTGOING' ? 'Телефон получателя' : 'Телефон отправителя'}
+                </Text>
                 <Text style={styles.detailValue}>{transaction.counterpartyPhone}</Text>
               </View>
             )}
